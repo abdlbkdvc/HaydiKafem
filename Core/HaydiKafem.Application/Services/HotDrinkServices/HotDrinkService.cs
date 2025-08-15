@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using FluentValidation;
 using HaydiKafem.Application.Dtos.HotDrinkDtos;
 using HaydiKafem.Application.Dtos.ResponseDtos;
 using HaydiKafem.Application.Interfaces;
@@ -10,17 +11,31 @@ namespace HaydiKafem.Application.Services.HotDrinkServices
     {
         private readonly IRepository<HotDrink> _repository;
         private readonly IMapper _mapper;
+        private readonly IValidator<CreateHotDrinkDto> _createHotDrinkValidator;
+        private readonly IValidator<UpdateHotDrinkDto> _updateHotDrinkValidator;
 
-        public HotDrinkService(IRepository<HotDrink> repository, IMapper mapper)
+        public HotDrinkService(IRepository<HotDrink> repository, IMapper mapper, IValidator<CreateHotDrinkDto> createHotDrinkValidator, IValidator<UpdateHotDrinkDto> updateHotDrinkValidator)
         {
             _repository = repository;
             _mapper = mapper;
+            _createHotDrinkValidator = createHotDrinkValidator;
+            _updateHotDrinkValidator = updateHotDrinkValidator;
         }
 
         public async Task<ResponseDto<object>> CreateHotDrinkAsync(CreateHotDrinkDto dto)
         {
             try
             {
+                var validate = await _createHotDrinkValidator.ValidateAsync(dto);
+                if (validate.IsValid is false)
+                {
+                    return new ResponseDto<object>
+                    {
+                        Success = false,
+                        ErrorCodes = ErrorCodes.ValidationError,
+                        Message = string.Join(",", validate.Errors.Select(x => x.ErrorMessage))
+                    };
+                }
                 var mappedHotDrink = _mapper.Map<HotDrink>(dto);
                 await _repository.CreateAsync(mappedHotDrink);
                 return new ResponseDto<object>
@@ -139,6 +154,16 @@ namespace HaydiKafem.Application.Services.HotDrinkServices
         {
             try
             {
+                var validate = await _updateHotDrinkValidator.ValidateAsync(dto);
+                if(validate.IsValid is false)
+                {
+                    return new ResponseDto<object>
+                    {
+                        ErrorCodes = ErrorCodes.ValidationError,
+                        Success = false,
+                        Message = string.Join(",",validate.Errors.Select(x=>x.ErrorMessage))
+                    };
+                }
                 var HotDrink = await _repository.GetByIdAsync(dto.HotDrinkId);
                 if (HotDrink is null)
                 {

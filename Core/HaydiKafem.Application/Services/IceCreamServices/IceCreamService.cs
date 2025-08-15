@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using FluentValidation;
 using HaydiKafem.Application.Dtos.IceCreamDtos;
 using HaydiKafem.Application.Dtos.ResponseDtos;
 using HaydiKafem.Application.Interfaces;
@@ -10,17 +11,31 @@ namespace HaydiKafem.Application.Services.IceCreamServices
     {
         private readonly IRepository<IceCream> _repository;
         private readonly IMapper _mapper;
+        private readonly IValidator<CreateIceCreamDto> _createIceCreamValidator;
+        private readonly IValidator<UpdateIceCreamDto> _updateIceCreamValidator;
 
-        public IceCreamService(IRepository<IceCream> repository, IMapper mapper)
+        public IceCreamService(IRepository<IceCream> repository, IMapper mapper, IValidator<CreateIceCreamDto> createIceCreamValidator, IValidator<UpdateIceCreamDto> updateIceCreamValidator)
         {
             _repository = repository;
             _mapper = mapper;
+            _createIceCreamValidator = createIceCreamValidator;
+            _updateIceCreamValidator = updateIceCreamValidator;
         }
 
         public async Task<ResponseDto<object>> CreateIceCreamAsync(CreateIceCreamDto dto)
         {
             try
             {
+                var validate = await _createIceCreamValidator.ValidateAsync(dto);
+                if (validate.IsValid is false)
+                {
+                    return new ResponseDto<object>
+                    {
+                        Message = string.Join(",", validate.Errors.Select(x => x.ErrorMessage)),
+                        Success = false,
+                        ErrorCodes = ErrorCodes.ValidationError
+                    };
+                }
                 var mappedIceCream = _mapper.Map<IceCream>(dto);
                 await _repository.CreateAsync(mappedIceCream);
                 return new ResponseDto<object>
@@ -152,6 +167,16 @@ namespace HaydiKafem.Application.Services.IceCreamServices
         {
             try
             {
+                var validate = await _updateIceCreamValidator.ValidateAsync(dto);
+                if (validate.IsValid is false)
+                {
+                    return new ResponseDto<object>
+                    {
+                        Success = false,
+                        ErrorCodes = ErrorCodes.ValidationError,
+                        Message = string.Join(",", validate.Errors.Select(x => x.ErrorMessage))
+                    };
+                }
                 var IceCream = await _repository.GetByIdAsync(dto.IceCreamId);
                 if (IceCream is null)
                 {

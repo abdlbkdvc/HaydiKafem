@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using FluentValidation;
 using HaydiKafem.Application.Dtos.ColdDrinkDtos;
 using HaydiKafem.Application.Dtos.ResponseDtos;
 using HaydiKafem.Application.Interfaces;
@@ -10,17 +11,31 @@ namespace HaydiKafem.Application.Services.ColdDrinkServices
     {
         private readonly IRepository<ColdDrink> _repository;
         private readonly IMapper _mapper;
+        private readonly IValidator<CreateColdDrinkDto> _createColdDrink;
+        private readonly IValidator<UpdateColdDrinkDto> _updateColdDrink;
 
-        public ColdDrinkService(IRepository<ColdDrink> repository, IMapper mapper)
+        public ColdDrinkService(IRepository<ColdDrink> repository, IMapper mapper, IValidator<CreateColdDrinkDto> createColdDrink, IValidator<UpdateColdDrinkDto> updateColdDrink)
         {
             _repository = repository;
             _mapper = mapper;
+            _createColdDrink = createColdDrink;
+            _updateColdDrink = updateColdDrink;
         }
 
         public async Task<ResponseDto<object>> CreateColdDrinkAsync(CreateColdDrinkDto dto)
         {
             try
             {
+                var validate = await _createColdDrink.ValidateAsync(dto);
+                if (validate.IsValid is false)
+                {
+                    return new ResponseDto<object>
+                    {
+                        ErrorCodes = ErrorCodes.ValidationError,
+                        Message = string.Join(",", validate.Errors.Select(x => x.ErrorMessage)),
+                        Success = false
+                    };
+                }
                 var mappedColdDrink = _mapper.Map<ColdDrink>(dto);
                 await _repository.CreateAsync(mappedColdDrink);
                 return new ResponseDto<object>
@@ -46,6 +61,7 @@ namespace HaydiKafem.Application.Services.ColdDrinkServices
         {
             try
             {
+
                 var ColdDrink = await _repository.GetByIdAsync(id);
                 if (ColdDrink is null)
                 {
@@ -137,6 +153,16 @@ namespace HaydiKafem.Application.Services.ColdDrinkServices
         {
             try
             {
+                var validate = await _updateColdDrink.ValidateAsync(dto);
+                if (validate.IsValid is false)
+                {
+                    return new ResponseDto<object>
+                    {
+                        Success = false,
+                        ErrorCodes = ErrorCodes.ValidationError,
+                        Message = string.Join(",", validate.Errors.Select(x => x.ErrorMessage))
+                    };
+                }
                 var ColdDrink = await _repository.GetByIdAsync(dto.ColdDrinkId);
                 if (ColdDrink is null)
                 {

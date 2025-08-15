@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using FluentValidation;
 using HaydiKafem.Application.Dtos.Food;
 using HaydiKafem.Application.Dtos.ResponseDtos;
 using HaydiKafem.Application.Interfaces;
@@ -10,17 +11,31 @@ namespace HaydiKafem.Application.Services.FoodServices
     {
         private readonly IRepository<Food> _repository;
         private readonly IMapper _mapper;
+        private readonly IValidator<CreateFoodDto> _createFoodValidator;
+        private readonly IValidator<UpdateFoodDto> _updateFoodValidator;
 
-        public FoodService(IRepository<Food> repository, IMapper mapper)
+        public FoodService(IRepository<Food> repository, IMapper mapper, IValidator<CreateFoodDto> createFoodValidator, IValidator<UpdateFoodDto> updateFoodValidator)
         {
             _repository = repository;
             _mapper = mapper;
+            _createFoodValidator = createFoodValidator;
+            _updateFoodValidator = updateFoodValidator;
         }
 
         public async Task<ResponseDto<object>> CreateFoodAsync(CreateFoodDto dto)
         {
             try
             {
+                var validate = await _createFoodValidator.ValidateAsync(dto);
+                if (validate.IsValid is false)
+                {
+                    return new ResponseDto<object>
+                    {
+                        Message = string.Join(",", validate.Errors.Select(x => x.ErrorMessage)),
+                        ErrorCodes = ErrorCodes.ValidationError,
+                        Success = false
+                    };
+                }
                 var mappedFood = _mapper.Map<Food>(dto);
                 await _repository.CreateAsync(mappedFood);
                 return new ResponseDto<object>
@@ -156,6 +171,16 @@ namespace HaydiKafem.Application.Services.FoodServices
         {
             try
             {
+                var validate = await _updateFoodValidator.ValidateAsync(dto);
+                if (validate.IsValid is false)
+                {
+                    return new ResponseDto<object>
+                    {
+                        Success = false,
+                        ErrorCodes = ErrorCodes.ValidationError,
+                        Message = string.Join(",", validate.Errors.Select(x => x.ErrorMessage))
+                    };
+                }
                 var foodDatabase = await _repository.GetByIdAsync(dto.FoodId);
                 if (foodDatabase == null)
                 {

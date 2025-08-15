@@ -1,3 +1,9 @@
+using FluentValidation;
+using HaydiKafem.Application.Dtos.ColdDrinkDtos;
+using HaydiKafem.Application.Dtos.DesertDtos;
+using HaydiKafem.Application.Dtos.Food;
+using HaydiKafem.Application.Dtos.HotDrinkDtos;
+using HaydiKafem.Application.Dtos.IceCreamDtos;
 using HaydiKafem.Application.Interfaces;
 using HaydiKafem.Application.Mapping;
 using HaydiKafem.Application.Services.ColdDrinkServices;
@@ -21,6 +27,24 @@ builder.Services.AddScoped<IIceCreamService, IceCreamService>();
 builder.Services.AddScoped<IDesertService, DesertService>();
 builder.Services.AddScoped<IColdDrinkService, ColdDrinkService>();
 builder.Services.AddScoped<IHotDrinkService, HotDrinkService>();
+
+// Validators
+builder.Services.AddValidatorsFromAssemblyContaining<CreateColdDrinkDto>();
+builder.Services.AddValidatorsFromAssemblyContaining<UpdateColdDrinkDto>();
+
+builder.Services.AddValidatorsFromAssemblyContaining<CreateDesertDto>();
+builder.Services.AddValidatorsFromAssemblyContaining<UpdateDesertDto>();
+
+builder.Services.AddValidatorsFromAssemblyContaining<CreateFoodDto>();
+builder.Services.AddValidatorsFromAssemblyContaining<UpdateFoodDto>();
+builder.Services.AddValidatorsFromAssemblyContaining<CreateHotDrinkDto>();
+
+builder.Services.AddValidatorsFromAssemblyContaining<UpdateHotDrinkDto>();
+builder.Services.AddValidatorsFromAssemblyContaining<CreateIceCreamDto>();
+
+builder.Services.AddValidatorsFromAssemblyContaining<UpdateIceCreamDto>();
+builder.Services.AddValidatorsFromAssemblyContaining<UpdateIceCreamDto>();
+
 //AutoMapper
 builder.Services.AddAutoMapper(cfg =>
 {
